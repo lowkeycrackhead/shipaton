@@ -1,7 +1,14 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const defaultUrl = 'https://vdcjpscmfoyqsrmtxhla.supabase.co';
+const defaultKey =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkY2pwc2NtZm95cXNybXR4aGxhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2OTI3ODYsImV4cCI6MjEwNjI2ODc4Nn0.NAqTavTpk9zMr41QPPRFD5PcU5BIETX6jmxFIVsUuKc';
+
+const rawUrl = import.meta.env.VITE_SUPABASE_URL || defaultUrl;
+const rawKey = import.meta.env.VITE_SUPABASE_ANON_KEY || defaultKey;
+
+const supabaseUrl = typeof rawUrl === 'string' ? rawUrl.trim() : defaultUrl;
+const supabaseAnonKey = typeof rawKey === 'string' ? rawKey.trim() : defaultKey;
 
 const checkConfigured = (url?: string, key?: string): boolean => {
   if (!url || !key) return false;
@@ -15,6 +22,24 @@ const checkConfigured = (url?: string, key?: string): boolean => {
 };
 
 export const isSupabaseConfigured = checkConfigured(supabaseUrl, supabaseAnonKey);
+
+export function formatAuthErrorMessage(error: unknown): string {
+  const msg = (error as { message?: string })?.message || String(error || '');
+  const lower = msg.toLowerCase();
+  if (lower.includes('failed to fetch')) {
+    return 'Could not connect to Supabase (Failed to fetch). If you have Brave Shields, uBlock, AdGuard, or an ad blocker enabled, please turn off shields for localhost, or check your internet connection.';
+  }
+  if (lower.includes('email not confirmed')) {
+    return 'Your email has not been confirmed yet. Please check your inbox for the confirmation link, or disable "Confirm email" in your Supabase Auth dashboard for instant logins.';
+  }
+  if (lower.includes('invalid login credentials')) {
+    return 'Invalid email or password. Please verify your credentials or create a new account.';
+  }
+  if (lower.includes('email_address_invalid') || lower.includes('invalid email')) {
+    return 'Please enter a valid, active email address (e.g. @gmail.com).';
+  }
+  return msg || 'An unexpected authentication error occurred.';
+}
 
 /**
  * Lightweight mock client that guarantees zero crashes and full offline / GitHub review support
@@ -116,7 +141,13 @@ let activeClient: SupabaseClient;
 
 if (isSupabaseConfigured) {
   try {
-    activeClient = createClient(supabaseUrl!, supabaseAnonKey!);
+    activeClient = createClient(supabaseUrl!, supabaseAnonKey!, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    });
   } catch (err) {
     console.warn('Error creating Supabase client, falling back to mock client:', err);
     activeClient = createMockClient();

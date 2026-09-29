@@ -2,7 +2,7 @@ import { useApp } from '@/context/AppContext';
 import { LANGUAGES, type Language } from '@/data/mockData';
 import { useState } from 'react';
 import { UserPlus, Eye, EyeOff, Check, ChevronDown, Globe, Sparkles } from 'lucide-react';
-import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { supabase, isSupabaseConfigured, formatAuthErrorMessage } from '@/lib/supabaseClient';
 import { TopBar } from '@/components/TopBar';
 
 export function SignUpPage() {
@@ -55,7 +55,7 @@ export function SignUpPage() {
         });
 
         if (signUpError) {
-          setError(signUpError.message);
+          setError(formatAuthErrorMessage(signUpError));
           setLoading(false);
           return;
         }
@@ -79,7 +79,7 @@ export function SignUpPage() {
           return;
         }
       } catch (err: unknown) {
-        setError((err as Error)?.message || 'Network error connecting to Supabase.');
+        setError(formatAuthErrorMessage(err));
         setLoading(false);
         return;
       }

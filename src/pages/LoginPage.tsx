@@ -1,7 +1,7 @@
 import { useApp } from '@/context/AppContext';
 import { useState } from 'react';
 import { LogIn, Eye, EyeOff, Sun, Sparkles, Zap } from 'lucide-react';
-import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { supabase, isSupabaseConfigured, formatAuthErrorMessage } from '@/lib/supabaseClient';
 import { TopBar } from '@/components/TopBar';
 import { useTranslation } from 'react-i18next';
 
@@ -46,7 +46,7 @@ export function LoginPage() {
         });
 
         if (signInError) {
-          setError(signInError.message);
+          setError(formatAuthErrorMessage(signInError));
           setLoading(false);
           return;
         }
@@ -57,7 +57,7 @@ export function LoginPage() {
         navigate('my-day');
         return;
       } catch (err: unknown) {
-        setError((err as Error)?.message || 'Network error connecting to Supabase.');
+        setError(formatAuthErrorMessage(err));
         setLoading(false);
         return;
       }
