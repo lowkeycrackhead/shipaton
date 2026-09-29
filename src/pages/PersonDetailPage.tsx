@@ -6,7 +6,7 @@ import { Phone, Volume2, ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 
 export function PersonDetailPage() {
-  const { selectedPersonId, goBack } = useApp();
+  const { selectedPersonId, goBack, isDemoUser, openAuthGate } = useApp();
   const { people, error, refresh } = usePeople();
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [callNotice, setCallNotice] = useState<string | null>(null);
@@ -29,6 +29,10 @@ export function PersonDetailPage() {
 
   const handleCall = () => {
     if (!person) return;
+    if (isDemoUser) {
+      openAuthGate(`place live phone calls to ${person.name}`);
+      return;
+    }
     setCallNotice(`Calling ${person.name} (${person.phone})...`);
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();

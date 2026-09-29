@@ -13,7 +13,7 @@ import { ConditionCareModule } from '@/components/ConditionCareModule';
 
 export function MyDayPage() {
   const { t, i18n } = useTranslation();
-  const { patientName, careCondition } = useApp();
+  const { patientName, careCondition, isDemoUser, openAuthGate } = useApp();
   const { reminders, loading, error, completeReminder, refresh } = useReminders();
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -49,9 +49,20 @@ export function MyDayPage() {
       : t('tookMedicine');
 
   const handleComplete = () => {
+    if (isDemoUser) {
+      openAuthGate('complete and track your scheduled medications');
+      return;
+    }
     if (nextReminder) {
       completeReminder(nextReminder.id);
       setShowSuccess(true);
+    }
+  };
+
+  const handleRemindLater = () => {
+    if (isDemoUser) {
+      openAuthGate('snooze and reschedule tasks');
+      return;
     }
   };
 
@@ -97,7 +108,7 @@ export function MyDayPage() {
                   <Check className="w-7 h-7" />
                   {completeButtonLabel}
                 </button>
-                <button className="btn-secondary flex-1">
+                <button onClick={handleRemindLater} className="btn-secondary flex-1">
                   <Clock className="w-6 h-6" />
                   {t('remindLater')}
                 </button>

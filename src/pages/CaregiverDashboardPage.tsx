@@ -61,7 +61,7 @@ const conditionIcons: Record<string, typeof Brain> = {
 };
 
 export function CaregiverDashboardPage() {
-  const { setCaregiverMode, navigate, patientName, signOut, careCondition, setCareCondition } = useApp();
+  const { setCaregiverMode, navigate, patientName, signOut, careCondition, setCareCondition, isDemoUser, openAuthGate } = useApp();
   const remindersHook = useReminders();
   const memoriesHook = useMemories();
   const peopleHook = usePeople();
@@ -111,8 +111,116 @@ export function CaregiverDashboardPage() {
     navigate('my-day');
   };
 
+  const handleOpenReminderForm = (open: boolean) => {
+    if (open && isDemoUser) {
+      openAuthGate('create custom medication reminders');
+      return;
+    }
+    setShowReminderForm(open);
+  };
+
+  const handleOpenMemoryForm = (open: boolean) => {
+    if (open && isDemoUser) {
+      openAuthGate('upload family photo memories');
+      return;
+    }
+    setShowMemoryForm(open);
+  };
+
+  const handleOpenPersonForm = (open: boolean) => {
+    if (open && isDemoUser) {
+      openAuthGate('add family contacts and phone numbers');
+      return;
+    }
+    setShowPersonForm(open);
+  };
+
+  const gatedAddReminder = async (item: Parameters<typeof addReminder>[0]) => {
+    if (isDemoUser) {
+      openAuthGate('add and save custom reminders');
+      return;
+    }
+    return addReminder(item);
+  };
+
+  const gatedDeleteReminder = async (id: string) => {
+    if (isDemoUser) {
+      openAuthGate('edit or delete reminders');
+      return;
+    }
+    return deleteReminder(id);
+  };
+
+  const gatedAddMemory = async (item: Parameters<typeof addMemory>[0]) => {
+    if (isDemoUser) {
+      openAuthGate('upload real family photos and memories');
+      return;
+    }
+    return addMemory(item);
+  };
+
+  const gatedDeleteMemory = async (id: string) => {
+    if (isDemoUser) {
+      openAuthGate('manage saved memories');
+      return;
+    }
+    return deleteMemory(id);
+  };
+
+  const gatedClearMemories = async () => {
+    if (isDemoUser) {
+      openAuthGate('clear sample memories');
+      return;
+    }
+    return clearMemories();
+  };
+
+  const gatedAddPerson = async (item: Parameters<typeof addPerson>[0]) => {
+    if (isDemoUser) {
+      openAuthGate('add family members to your directory');
+      return;
+    }
+    return addPerson(item);
+  };
+
+  const gatedDeletePerson = async (id: string) => {
+    if (isDemoUser) {
+      openAuthGate('manage your contact list');
+      return;
+    }
+    return deletePerson(id);
+  };
+
+  const gatedClearPeople = async () => {
+    if (isDemoUser) {
+      openAuthGate('clear sample contacts');
+      return;
+    }
+    return clearPeople();
+  };
+
+  const gatedSetCareCondition = (c: CareCondition) => {
+    if (isDemoUser) {
+      openAuthGate('customize condition-tailored care focus');
+      return;
+    }
+    setCareCondition(c);
+  };
+
   return (
     <div className="min-h-screen bg-cream-100">
+      {isDemoUser && (
+        <div className="bg-honey-500 text-white px-4 py-2 text-center text-sm font-bold flex items-center justify-center gap-2">
+          <Sparkles className="w-4 h-4" />
+          <span>Demo Preview Mode: You are viewing sample data. Sign up to save your own schedule.</span>
+          <button
+            onClick={() => openAuthGate('manage real caregiver data')}
+            className="ml-2 underline hover:text-honey-100"
+          >
+            Create Free Account
+          </button>
+        </div>
+      )}
       {/* Header */}
       <header className="bg-white border-b border-cream-200 sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
@@ -169,7 +277,7 @@ export function CaregiverDashboardPage() {
             peopleCount={people.length}
             setTab={setTab}
             careCondition={careCondition}
-            setCareCondition={setCareCondition}
+            setCareCondition={gatedSetCareCondition}
           />
         )}
         {tab === 'reminders' && (
@@ -177,9 +285,9 @@ export function CaregiverDashboardPage() {
             reminders={reminders}
             completeReminder={completeReminder}
             showForm={showReminderForm}
-            setShowForm={setShowReminderForm}
-            addReminder={addReminder}
-            deleteReminder={deleteReminder}
+            setShowForm={handleOpenReminderForm}
+            addReminder={gatedAddReminder}
+            deleteReminder={gatedDeleteReminder}
             loading={rLoading}
             error={rError}
             refresh={rRefresh}
@@ -189,10 +297,10 @@ export function CaregiverDashboardPage() {
           <MemoriesTab
             memories={memories}
             showForm={showMemoryForm}
-            setShowForm={setShowMemoryForm}
-            addMemory={addMemory}
-            deleteMemory={deleteMemory}
-            clearMemories={clearMemories}
+            setShowForm={handleOpenMemoryForm}
+            addMemory={gatedAddMemory}
+            deleteMemory={gatedDeleteMemory}
+            clearMemories={gatedClearMemories}
             restoreMemories={restoreMemories}
             loading={mLoading}
             error={mError}
@@ -203,10 +311,10 @@ export function CaregiverDashboardPage() {
           <PeopleTab
             people={people}
             showForm={showPersonForm}
-            setShowForm={setShowPersonForm}
-            addPerson={addPerson}
-            deletePerson={deletePerson}
-            clearPeople={clearPeople}
+            setShowForm={handleOpenPersonForm}
+            addPerson={gatedAddPerson}
+            deletePerson={gatedDeletePerson}
+            clearPeople={gatedClearPeople}
             restorePeople={restorePeople}
             loading={pLoading}
             error={pError}

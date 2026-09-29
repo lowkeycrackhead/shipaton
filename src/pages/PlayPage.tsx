@@ -58,7 +58,7 @@ const CATEGORIES: CategoryTab[] = [
 
 export function PlayPage() {
   const { games, loading, error } = useGames();
-  const { careCondition } = useApp();
+  const { careCondition, isDemoUser, openAuthGate } = useApp();
   const [selectedCategory, setSelectedCategory] = useState<'all' | GameCategory>('all');
   const [playingGameId, setPlayingGameId] = useState<string | null>(null);
   const [lastFinishedTitle, setLastFinishedTitle] = useState<string | null>(null);
@@ -236,7 +236,13 @@ export function PlayPage() {
                   </div>
 
                   <button
-                    onClick={() => setPlayingGameId(game.id)}
+                    onClick={() => {
+                      if (isDemoUser) {
+                        openAuthGate('play brain wellness games and record your achievements');
+                        return;
+                      }
+                      setPlayingGameId(game.id);
+                    }}
                     className="btn-primary w-full text-lg py-3 flex items-center justify-center gap-2 shadow-md active:scale-98"
                   >
                     <Play className="w-5 h-5 fill-current" />

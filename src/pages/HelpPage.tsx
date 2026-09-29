@@ -4,7 +4,7 @@ import { Phone, UserCog, Volume2, ArrowLeft, ShieldCheck, HeartPulse } from 'luc
 import { useState } from 'react';
 
 export function HelpPage() {
-  const { goBack, careCondition } = useApp();
+  const { goBack, careCondition, isDemoUser, openAuthGate } = useApp();
   const [speechNotice, setSpeechNotice] = useState<string | null>(null);
 
   const handleReadAloud = (text: string) => {
@@ -96,7 +96,13 @@ export function HelpPage() {
 
       <div className="grid grid-cols-1 gap-4">
         <button
-          onClick={() => handleReadAloud('Calling your family now. Someone who loves you will answer.')}
+          onClick={() => {
+            if (isDemoUser) {
+              openAuthGate('place instant voice calls to your family');
+              return;
+            }
+            handleReadAloud('Calling your family now. Someone who loves you will answer.');
+          }}
           className="card-base card-hover p-6 flex items-center gap-5 text-left group"
         >
           <div className="w-16 h-16 rounded-2xl bg-sage-100 flex items-center justify-center shrink-0 group-hover:scale-105 transition">
@@ -109,7 +115,13 @@ export function HelpPage() {
         </button>
 
         <button
-          onClick={() => handleReadAloud('Contacting your helper now. They are ready to assist you.')}
+          onClick={() => {
+            if (isDemoUser) {
+              openAuthGate('call your designated primary caregiver');
+              return;
+            }
+            handleReadAloud('Contacting your helper now. They are ready to assist you.');
+          }}
           className="card-base card-hover p-6 flex items-center gap-5 text-left group"
         >
           <div className="w-16 h-16 rounded-2xl bg-honey-100 flex items-center justify-center shrink-0 group-hover:scale-105 transition">

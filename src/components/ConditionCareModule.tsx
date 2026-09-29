@@ -18,7 +18,7 @@ import {
 import { CONDITIONS } from '@/data/mockData';
 
 export function ConditionCareModule() {
-  const { careCondition, navigate } = useApp();
+  const { careCondition, navigate, isDemoUser, openAuthGate } = useApp();
   const [waterCount, setWaterCount] = useState(() => {
     return parseInt(localStorage.getItem('haven_water_count') || '3', 10);
   });
@@ -34,6 +34,10 @@ export function ConditionCareModule() {
   ]);
 
   const handleWater = () => {
+    if (isDemoUser) {
+      openAuthGate('log your daily hydration');
+      return;
+    }
     const next = Math.min(8, waterCount + 1);
     setWaterCount(next);
     localStorage.setItem('haven_water_count', next.toString());
@@ -52,11 +56,19 @@ export function ConditionCareModule() {
   };
 
   const handleHeart = () => {
+    if (isDemoUser) {
+      openAuthGate('send loving messages to family');
+      return;
+    }
     setHeartSent(true);
     setTimeout(() => setHeartSent(false), 4000);
   };
 
   const toggleMciTask = (id: number) => {
+    if (isDemoUser) {
+      openAuthGate('update and save your daily checklist');
+      return;
+    }
     setMciTasks((ts) =>
       ts.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
     );

@@ -26,29 +26,44 @@ export function LoginPage() {
 
     setLoading(true);
 
-    // If Supabase is configured and input looks like an email, attempt cloud authentication
-    if (isSupabaseConfigured && input.includes('@')) {
+    // If Supabase is configured, enforce real cloud authentication
+    if (isSupabaseConfigured) {
+      if (!input.includes('@')) {
+        setError(t('enterValidEmail', 'Please enter your account email address.'));
+        setLoading(false);
+        return;
+      }
+      if (!password) {
+        setError(t('enterPassword', 'Please enter your account password.'));
+        setLoading(false);
+        return;
+      }
+
       try {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: input,
-          password: password || 'demo123',
+          password: password,
         });
 
-        if (!signInError) {
+        if (signInError) {
+          setError(signInError.message);
           setLoading(false);
-          navigate('my-day');
           return;
         }
 
-        // If Supabase auth returned an error (e.g. user not registered yet),
-        // seamlessly fall back to local demo session with their entered username
-        console.warn('Supabase sign-in notice:', signInError.message, '- Continuing in Demo Mode');
-      } catch (err) {
-        console.warn('Supabase network error, continuing in Demo Mode:', err);
+        // Successfully signed in to Supabase cloud
+        localStorage.removeItem('haven_demo_user');
+        setLoading(false);
+        navigate('my-day');
+        return;
+      } catch (err: unknown) {
+        setError((err as Error)?.message || 'Network error connecting to Supabase.');
+        setLoading(false);
+        return;
       }
     }
 
-    // Zero-friction fallback: Sign in immediately with the entered username or email
+    // Zero-friction fallback when no Supabase credentials are configured in .env
     setLoading(false);
     loginWithDemo(input);
   };
@@ -82,9 +97,9 @@ export function LoginPage() {
               </label>
               <input
                 id="loginInput"
-                type="text"
+                type={isSupabaseConfigured ? 'email' : 'text'}
                 autoComplete="username"
-                placeholder="e.g. Elena Vance or elena@example.com"
+                placeholder={isSupabaseConfigured ? 'e.g. yourname@example.com' : 'e.g. Elena Vance or elena@example.com'}
                 value={emailOrUsername}
                 onChange={(e) => setEmailOrUsername(e.target.value)}
                 className="w-full rounded-2xl border-2 border-cream-300 bg-white px-4 py-3.5 text-base sm:text-lg focus:border-honey-400 focus:outline-none transition shadow-xs"
@@ -100,7 +115,7 @@ export function LoginPage() {
                   id="loginPassword"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
-                  placeholder="Enter password (optional in demo)"
+                  placeholder={isSupabaseConfigured ? 'Enter your account password' : 'Enter password (optional in demo)'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full rounded-2xl border-2 border-cream-300 bg-white px-4 py-3.5 pr-12 text-base sm:text-lg focus:border-honey-400 focus:outline-none transition shadow-xs"

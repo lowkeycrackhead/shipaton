@@ -55,6 +55,7 @@ interface AppState {
   loginWithDemo: (usernameOrEmail?: string) => void;
   careCondition: CareCondition;
   setCareCondition: (c: CareCondition) => void;
+  isDemoUser: boolean;
   // Auth gate modal (for demo mode feature lock)
   authGateOpen: boolean;
   authGateFeature: string;
@@ -107,41 +108,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
 
-    // First check local demo user storage
-    const savedDemo = localStorage.getItem('haven_demo_user');
-    if (savedDemo) {
-      try {
-        const parsed = JSON.parse(savedDemo);
-        if (parsed?.name) {
-          setPatientName(parsed.name);
-          setAuthState('authenticated');
-          setRoute('my-day');
-          setSession({
-            access_token: 'demo-token',
-            user: {
-              id: 'demo-user',
-              email: parsed.email || 'demo@haven.app',
-              user_metadata: { full_name: parsed.name },
-            },
-          } as unknown as Session);
-          setAuthLoading(false);
-          return;
-        }
-      } catch {
-        // ignore malformed stored demo user
-      }
-    }
-
     supabase.auth
       .getSession()
       .then(({ data: { session: initialSession } }) => {
         if (!active) return;
-        setSession(initialSession);
-        if (initialSession) {
+        if (initialSession && !initialSession.user.id.startsWith('demo-')) {
+          localStorage.removeItem('haven_demo_user');
+          setSession(initialSession);
           setAuthState('authenticated');
           setRoute('my-day');
           loadProfile(initialSession.user.id, initialSession.user.user_metadata?.full_name);
+          setAuthLoading(false);
+          return;
         }
+
+        // Check local demo user storage if no real Supabase session exists
+        const savedDemo = localStorage.getItem('haven_demo_user');
+        if (savedDemo) {
+          try {
+            const parsed = JSON.parse(savedDemo);
+            if (parsed?.name) {
+              setPatientName(parsed.name);
+              setAuthState('authenticated');
+              setRoute('my-day');
+              setSession({
+                access_token: 'demo-token',
+                user: {
+                  id: 'demo-user-123',
+                  email: parsed.email || 'demo@haven.app',
+                  user_metadata: { full_name: parsed.name },
+                },
+              } as unknown as Session);
+              setAuthLoading(false);
+              return;
+            }
+          } catch {
+            // ignore malformed stored demo user
+          }
+        }
+
         setAuthLoading(false);
       })
       .catch(() => {
@@ -150,10 +155,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
-      if (newSession) {
+      if (newSession && !newSession.user.id.startsWith('demo-')) {
+        localStorage.removeItem('haven_demo_user');
         setAuthState((prev) => (prev === 'onboarding' ? prev : 'authenticated'));
         loadProfile(newSession.user.id, newSession.user.user_metadata?.full_name);
-      } else {
+      } else if (!newSession) {
         const hasDemo = localStorage.getItem('haven_demo_user');
         if (!hasDemo) {
           setAuthState('guest');
@@ -260,6 +266,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setAuthGateFeature('');
   };
 
+  const isDemoUser =
+    !session ||
+    session.user.id === 'demo-user' ||
+    session.user.id === 'demo-user-123' ||
+    session.user.id.startsWith('demo-') ||
+    Boolean(localStorage.getItem('haven_demo_user')) ||
+    authState === 'guest';
+
   const value: AppState = {
     route,
     navigate,
@@ -284,6 +298,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     authLoading,
     signOut,
     loginWithDemo,
+    isDemoUser,
     authGateOpen,
     authGateFeature,
     openAuthGate,

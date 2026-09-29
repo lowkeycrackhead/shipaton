@@ -54,7 +54,15 @@ export function SignUpPage() {
           options: { data: { full_name: fullName.trim() } },
         });
 
-        if (!signUpError && data?.session) {
+        if (signUpError) {
+          setError(signUpError.message);
+          setLoading(false);
+          return;
+        }
+
+        localStorage.removeItem('haven_demo_user');
+
+        if (data?.session) {
           setLoading(false);
           setLanguage(preferredLanguage);
           setPatientName(fullName.trim());
@@ -63,15 +71,21 @@ export function SignUpPage() {
           return;
         }
 
-        if (signUpError) {
-          console.warn('Supabase sign-up notice:', signUpError.message, '- Continuing with local session');
+        if (data?.user) {
+          setLoading(false);
+          setSuccess(
+            'Account created! If your Supabase project has email confirmation enabled, please check your inbox and verify your email, then log in.'
+          );
+          return;
         }
-      } catch (err) {
-        console.warn('Supabase network error, continuing with local session:', err);
+      } catch (err: unknown) {
+        setError((err as Error)?.message || 'Network error connecting to Supabase.');
+        setLoading(false);
+        return;
       }
     }
 
-    // Zero-friction demo account creation for hackathon review & offline usage
+    // Zero-friction demo account creation when running offline without Supabase keys
     setLoading(false);
     setLanguage(preferredLanguage);
     loginWithDemo(fullName.trim());
